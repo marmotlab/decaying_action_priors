@@ -29,11 +29,18 @@
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
 
 from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
+import yaml
 
+with open(f"legged_gym/envs/param_config.yaml", "r") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
+    control_type = config['control_type']
+    action_scale = config['action_scale']
+    decimation = config['control_decimation']
+    num_envs = config['num_envs']
 
 class YunaRoughCfg(LeggedRobotCfg):
     class env(LeggedRobotCfg.env):
-        num_envs = 4096
+        num_envs = num_envs
         # num_observations = 253
         num_observations = 66
         num_actions = 18
@@ -109,21 +116,10 @@ class YunaRoughCfg(LeggedRobotCfg):
         }
 
     class control( LeggedRobotCfg.control ):
+        control_type = control_type
+        action_scale = action_scale
+
         exp_avg_decay = False
-        # action scale: target angle = actionScale * action + defaultAngle
-
-        #Using DecAP
-        # control_type = 'T_vanish_yuna'
-        # action_scale = 8.0
-
-        #Using torque alone
-        control_type = 'T'
-        action_scale = 8.0
-
-        #Using Position alone
-        # control_type = 'P'
-        # action_scale = 0.5
-
         limit_dof_pos = False
         # PD Drive parameters:
         stiffness = {'base1': 300.0,'base2': 300.0,'base3': 300.0,'base4': 300.0,'base5': 300.0,'base6': 300.0,
@@ -134,7 +130,7 @@ class YunaRoughCfg(LeggedRobotCfg):
                      'elbow1': 0.05,'elbow2': 0.05,'elbow3': 0.05,'elbow4': 0.05,'elbow5': 0.05,'elbow6': 0.05}  # [N*m/rad]
 
         # decimation: Number of control action updates @ sim DT per policy DT
-        decimation = 4
+        decimation = decimation
         
     class asset( LeggedRobotCfg.asset ):
         file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/yuna/urdf/yuna.urdf'
@@ -191,15 +187,15 @@ class YunaRoughCfg(LeggedRobotCfg):
     class commands( LeggedRobotCfg.commands ):
         heading_command = False
         resampling_time = 8.
-        use_imitation_commands = False
+        use_imitation_commands = True
         class ranges( LeggedRobotCfg.commands.ranges ):
-            lin_vel_x = [0.3, 0.3] # min max [m/s]
-            lin_vel_y = [-0., 0.]   # min max [m/s]
-            ang_vel_yaw = [0., 0.]    # min max [rad/s]
-            # heading = [0.0, 0.0]
-            # lin_vel_x = [-0.4, 0.4] # min max [m/s]
-            # lin_vel_y = [-0.4, 0.4]   # min max [m/s]
-            # ang_vel_yaw = [-0.5, 0.5]    # min max [rad/s]
+            # lin_vel_x = [0.3, 0.3] # min max [m/s]
+            # lin_vel_y = [-0., 0.]   # min max [m/s]
+            # ang_vel_yaw = [0., 0.]    # min max [rad/s]
+            heading = [0.0, 0.0]
+            lin_vel_x = [-0.4, 0.4] # min max [m/s]
+            lin_vel_y = [-0.4, 0.4]   # min max [m/s]
+            ang_vel_yaw = [-0.5, 0.5]    # min max [rad/s]
 
     class normalization:
         class obs_scales:

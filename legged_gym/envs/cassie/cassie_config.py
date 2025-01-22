@@ -29,14 +29,18 @@
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
 
 from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
+import yaml
+
+with open(f"legged_gym/envs/param_config.yaml", "r") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
+    control_type = config['control_type']
+    action_scale = config['action_scale']
+    decimation = config['control_decimation']
+    num_envs = config['num_envs']
 
 class CassieRoughCfg( LeggedRobotCfg ):
     class env( LeggedRobotCfg.env):
-        # num_envs = 4096
-        # num_observations = 169
-        # num_actions = 12
-
-        num_envs = 4096
+        num_envs = num_envs
         # num_observations = 169
         num_observations = 48   
         num_actions = 12
@@ -60,20 +64,8 @@ class CassieRoughCfg( LeggedRobotCfg ):
         }
 
     class control( LeggedRobotCfg.control ):
-        # PD Drive parameters:
-        # action scale: target angle = actionScale * action + defaultAngle
-
-        #DecAP training
-        # control_type = 'T_vanish_humanoid'
-        # action_scale = 8.0
-
-        #Using Torques alone
-        control_type = 'T'
-        action_scale = 8.0
-
-        #Using position alone
-        # control_type = 'P'
-        # action_scale = 0.5
+        control_type = control_type
+        action_scale = action_scale
 
         stiffness = {   'hip_abduction': 100.0, 'hip_rotation': 100.0,
                         'hip_flexion': 200., 'thigh_joint': 200., 'ankle_joint': 200.,
@@ -83,7 +75,7 @@ class CassieRoughCfg( LeggedRobotCfg ):
                     'toe_joint': 1.}  # [N*m*s/rad]     # [N*m*s/rad]
         
         # decimation: Number of control action updates @ sim DT per policy DT
-        decimation = 4
+        decimation = decimation
         
     class viewer:
         ref_env = 0

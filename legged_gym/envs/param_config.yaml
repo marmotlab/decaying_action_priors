@@ -1,0 +1,20 @@
+# control types available:
+# torque - for learning and running torque control without decap
+# position - for learning and running position control without decap
+# decap_torque - for learning torque control with decaying action priors
+# decap_position - for learning position control with decaying action priors, not mentioned in the paper but the same method accelarates imitation learning in any space
+# NOTE: for inference of the policy use non-decap control types as they will initially run imitation commands along with the trained policy
+
+control_type: "decap_torque" 
+# control_type: "torque"
+action_scale: 8.0 # 8.0 for torque, 0.25 for position (quadruped), 0.5 for hexapod
+num_envs: 4096
+control_decimation: 4
+
+#DecAP parameters
+gamma: 0.99
+k: 100
+
+
+
+

@@ -85,6 +85,9 @@ class LeggedRobot(BaseTask):
 
 		if self.cfg.asset.name == "go1":
 			self.df_imit = pd.read_csv('imitation_data/imitation_data_wtw.csv', parse_dates=False)
+		
+		if self.cfg.asset.name == "go2":
+			self.df_imit = pd.read_csv('imitation_data/imitation_data_go2_decim1.csv', parse_dates=False)
 
 		elif self.cfg.asset.name == "cassie":
 			self.df_imit = pd.read_csv('imitation_data/imitation_cassie.csv', parse_dates=False)
@@ -600,89 +603,13 @@ class LeggedRobot(BaseTask):
 		if self.cfg.control.limit_dof_pos:
 			actions_scaled = torch.clip(actions_scaled, -0.25, 0.25)
 
-		if control_type=="P" or control_type=="RP" or control_type=="RV":
+		if control_type=="P":
 			torques = self.p_gains*(actions_scaled + self.default_dof_pos - self.dof_pos) - self.d_gains*self.dof_vel
 		elif control_type=="V":
 			torques = self.p_gains*(actions_scaled - self.dof_vel) - self.d_gains*(self.dof_vel - self.last_dof_vel)/self.sim_params.dt
 		elif control_type=="T":
 			torques = actions_scaled
-			#Save the torques in a csv file
-			df = pd.DataFrame(torques.detach().cpu().numpy())
-			# df.to_csv('torques.csv', mode='a', header=False,index=False)
-		elif control_type=="T_lg":
-			index_array = self.imitation_index.detach().cpu().numpy().astype(int)
-			# Retrieve the corresponding rows from self.df_imit using array indexing
-			dof_imit_arr = self.df_imit.iloc[index_array,6:18].to_numpy()
-			# Reshape the array to the desired shape
-			dof_imit_arr = dof_imit_arr.reshape(self.num_envs, self.num_actions)
-			# Convert the array to a PyTorch tensor
-			dof_imit_arr = torch.from_numpy(dof_imit_arr).float().to(self.device)
 
-			torques = actions_scaled + self.p_gains*(dof_imit_arr - self.dof_pos) - self.d_gains*self.dof_vel
-
-		elif control_type=="T_high_gain":
-			index_array = self.imitation_index.detach().cpu().numpy().astype(int)
-			# Retrieve the corresponding rows from self.df_imit using array indexing
-			dof_imit_arr = self.df_imit.iloc[index_array,6:18].to_numpy()
-			# Reshape the array to the desired shape
-			dof_imit_arr = dof_imit_arr.reshape(self.num_envs, self.num_actions)
-			# Convert the array to a PyTorch tensor
-			dof_imit_arr = torch.from_numpy(dof_imit_arr).float().to(self.device)
-
-			torques = actions_scaled + self.p_gains*(dof_imit_arr - self.dof_pos) - self.d_gains*self.dof_vel
-			# print("SCALED TORQUES", actions_scaled)
-
-		elif control_type=="T_low_gain":
-			index_array = self.imitation_index.detach().cpu().numpy().astype(int)
-			# Retrieve the corresponding rows from self.df_imit using array indexing
-			dof_imit_arr = self.df_imit.iloc[index_array,6:18].to_numpy()
-			# Reshape the array to the desired shape
-			dof_imit_arr = dof_imit_arr.reshape(self.num_envs, self.num_actions)
-			# Convert the array to a PyTorch tensor
-			dof_imit_arr = torch.from_numpy(dof_imit_arr).float().to(self.device)
-
-			torques = actions_scaled + 0.1*(dof_imit_arr - self.dof_pos) - 0.01*self.dof_vel + 0.99**(self.torque_ref_decay_factor/100)*(self.p_gains*(dof_imit_arr - self.dof_pos)- self.d_gains*self.dof_vel)
-			# print("SCALED TORQUES", actions_scaled)
-		elif control_type=="T_low_gain_inference":
-			index_array = self.imitation_index.detach().cpu().numpy().astype(int)
-			# Retrieve the corresponding rows from self.df_imit using array indexing
-			dof_imit_arr = self.df_imit.iloc[index_array,6:18].to_numpy()
-			# Reshape the array to the desired shape
-			dof_imit_arr = dof_imit_arr.reshape(self.num_envs, self.num_actions)
-			# Convert the array to a PyTorch tensor
-			dof_imit_arr = torch.from_numpy(dof_imit_arr).float().to(self.device)
-
-			torques = actions_scaled + 0.1*(dof_imit_arr - self.dof_pos) - 0.01*self.dof_vel
-			print("SCALED TORQUES", 0.1*(dof_imit_arr - self.dof_pos) - 0.01*self.dof_vel)
-
-
-		elif control_type=="T_ref_decay":
-		
-			#This is where the DecAP algorithm is applied
-        	#final_torques = actions_scaled + gamma^(time/k)*beta
-        	#beta = Kp(ref_angle - current_angle) + Kd(-current_velocity)
-
-			index_array = self.imitation_index.detach().cpu().numpy().astype(int)
-			# Retrieve the corresponding rows from df_imit using array indexing
-			dof_imit_arr = self.df_imit.iloc[index_array,6:18].to_numpy()
-			# Reshape the array to the desired shape
-			dof_imit_arr = dof_imit_arr.reshape(self.num_envs, self.num_actions)
-			# Convert the array to a PyTorch tensor
-			dof_imit_arr = torch.from_numpy(dof_imit_arr).float().to(self.device)
-			# print("DECAY",0.99**(self.torque_ref_decay_factor/20))
-			torques = actions_scaled + 0.99**(self.torque_ref_decay_factor/100)*(self.p_gains*(dof_imit_arr - self.dof_pos)- self.d_gains*self.dof_vel)
-		
-		elif control_type=="T_ref_decay_decim1":
-			index_array = self.imitation_index.detach().cpu().numpy().astype(int)
-			# Retrieve the corresponding rows from self.df_imit using array indexing
-			dof_imit_arr = self.df_imit.iloc[index_array,6:18].to_numpy()
-			# Reshape the array to the desired shape
-			dof_imit_arr = dof_imit_arr.reshape(self.num_envs, self.num_actions)
-			# Convert the array to a PyTorch tensor
-			dof_imit_arr = torch.from_numpy(dof_imit_arr).float().to(self.device)
-			# print("DECAY",0.99**(self.torque_ref_decay_factor/20))
-			torques = actions_scaled + 0.99**(self.torque_ref_decay_factor/300)*(self.p_gains*(dof_imit_arr - self.dof_pos)- self.d_gains*self.dof_vel)
-		
 		elif control_type=="P_ref_decay":
 			index_array = self.imitation_index.detach().cpu().numpy().astype(int)
 			# Retrieve the corresponding rows from self.df_imit using array indexing
@@ -694,28 +621,6 @@ class LeggedRobot(BaseTask):
 			# print("DECAY",0.99**(self.torque_ref_decay_factor/20))
 			torques = self.p_gains*(actions_scaled + self.default_dof_pos - self.dof_pos) - self.d_gains*self.dof_vel + 0.99**(self.torque_ref_decay_factor/50)*(self.p_gains*(dof_imit_arr - self.dof_pos)- self.d_gains*self.dof_vel)
 		
-		elif control_type=="T_vanish_yuna":
-			index_array = self.imitation_index.detach().cpu().numpy().astype(int)
-			# Retrieve the corresponding rows from self.df_imit using array indexing
-			dof_imit_arr = self.df_imit.iloc[index_array,0:18].to_numpy()
-			# Reshape the array to the desired shape
-			dof_imit_arr = dof_imit_arr.reshape(self.num_envs, self.num_actions)
-			# Convert the array to a PyTorch tensor
-			dof_imit_arr = torch.from_numpy(dof_imit_arr).float().to(self.device)
-			# print("DECAY",0.99**(self.torque_ref_decay_factor/20))
-			torques = actions_scaled + 0.99**(self.torque_ref_decay_factor/100)*(self.p_gains*(dof_imit_arr - self.dof_pos)- self.d_gains*self.dof_vel)
-		
-		elif control_type=="T_vanish_humanoid":
-			index_array = self.imitation_index.detach().cpu().numpy().astype(int)
-			# Retrieve the corresponding rows from self.df_imit using array indexing
-			dof_imit_arr = self.df_imit.iloc[index_array,0:12].to_numpy()
-			# Reshape the array to the desired shape
-			dof_imit_arr = dof_imit_arr.reshape(self.num_envs, self.num_actions)
-			# Convert the array to a PyTorch tensor
-			dof_imit_arr = torch.from_numpy(dof_imit_arr).float().to(self.device)
-			# print("DECAY",0.99**(self.torque_ref_decay_factor/20))
-			torques = actions_scaled + 0.99**(self.torque_ref_decay_factor/100)*(self.p_gains*(dof_imit_arr - self.dof_pos)- self.d_gains*self.dof_vel)
-
 		else:
 			raise NameError(f"Unknown controller type: {control_type}")
 
@@ -1344,35 +1249,6 @@ class LeggedRobot(BaseTask):
 	def _reward_feet_contact_forces(self):
 		# penalize high contact forces
 		return torch.sum((torch.norm(self.contact_forces[:, self.feet_indices, :], dim=-1) -  self.cfg.rewards.max_contact_force).clip(min=0.), dim=1)
-	
-	"""
-	Imitation Rewards
-	"""
-	# def _reward_imitation_angles(self):
-	#     index_array = self.imitation_index.detach().cpu().numpy().astype(int)
-	#     # Retrieve the corresponding rows from self.df_imit using array indexing
-	#     dof_imit_arr = self.df_imit.iloc[index_array,6:18].to_numpy()
-	#     # Reshape the array to the desired shape
-	#     dof_imit_arr = dof_imit_arr.reshape(self.num_envs, self.num_actions)
-
-	#     # Convert the array to a PyTorch tensor
-	#     dof_imit_arr = torch.from_numpy(dof_imit_arr).float().to(self.device)
-	#     dof_imit_error = torch.sum(torch.square(self.dof_pos - dof_imit_arr)*self.obs_scales.dof_imit, dim=1)  
-	#     return torch.exp(-10*dof_imit_error)  
-	#     # return dof_imit_error
-	
-	# def _reward_imitation_height(self):
-	#     index_array = self.imitation_index.detach().cpu().numpy().astype(int)
-	#     # print(index_array)
-	#     # Retrieve the corresponding rows from self.df_imit using array indexing
-	#     height = self.df_imit.iloc[index_array,21].to_numpy()
-	#     base_height = torch.mean(self.root_states[:, 2].unsqueeze(1) - self.measured_heights, dim=1)
-	#     height = height.reshape(self.num_envs, )
-	#     height = torch.from_numpy(height).float().to(self.device)
-	#     # print("BASE_HEIGHT", base_height.shape, "HEIGHT", height.shape)
-	#     # height_error = torch.sum(torch.abs(base_height - height), dim=1)    
-	#     height_error = torch.square(base_height - height)
-	#     return torch.exp(-height_error/self.cfg.rewards.tracking_sigma)
 
 
 	def pre_physics_step(self):
