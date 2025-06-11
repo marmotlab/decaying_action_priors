@@ -49,10 +49,11 @@ from legged_gym.utils.helpers import class_to_dict
 from .legged_robot_config import LeggedRobotCfg
 import pandas as pd
 import statistics
+import yaml
 
-# self.df_imit = pd.read_csv('imitation_data/imitation_data_wtw.csv', parse_dates=False)
-# self.df_imit = pd.read_csv('imitation_data/imitation_data_yuna_torques.csv', parse_dates=False)
-# self.df_imit = pd.read_csv('imitation_data/imitation_cassie.csv', parse_dates=False)
+with open(f"legged_gym/envs/param_config.yaml", "r") as f:
+	config = yaml.load(f, Loader=yaml.FullLoader)
+	path_to_imitation_data = config["path_to_imitation_data"]
 
 class LeggedRobot(BaseTask):
 	def __init__(self, cfg: LeggedRobotCfg, sim_params, physics_engine, sim_device, headless):
@@ -82,20 +83,7 @@ class LeggedRobot(BaseTask):
 		self._init_buffers()
 		self._prepare_reward_function()
 		self.init_done = True
-
-		if self.cfg.asset.name == "go1":
-			self.df_imit = pd.read_csv('imitation_data/imitation_data_wtw.csv', parse_dates=False)
-		
-		if self.cfg.asset.name == "go2":
-			self.df_imit = pd.read_csv('imitation_data/imitation_data_go2_decim1.csv', parse_dates=False)
-
-		elif self.cfg.asset.name == "cassie":
-			self.df_imit = pd.read_csv('imitation_data/imitation_cassie.csv', parse_dates=False)
-
-		elif self.cfg.asset.name == "yuna":
-			print("YUNA Imitation data")
-			self.df_imit = pd.read_csv('imitation_data/imitation_data_yuna_torques.csv', parse_dates=False)
-
+		self.df_imit = pd.read_csv(path_to_imitation_data, parse_dates=False)
 
 	def step(self, actions):
 		""" Apply actions, simulate, call self.post_physics_step()
@@ -271,6 +259,9 @@ class LeggedRobot(BaseTask):
 			self.extras["time_outs"] = self.time_out_buf
 		
 		self.gait_indices[env_ids] = 0
+
+		for i in range(len(self.lag_buffer)):
+			self.lag_buffer[i][env_ids, :] = 0
 
 	
 	def compute_reward(self):
@@ -467,6 +458,29 @@ class LeggedRobot(BaseTask):
 				props[s].friction = self.friction_coeffs[env_id]
 		return props
 
+	def _randomize_dof_props(self, env_ids, cfg):
+		if cfg.domain_rand.randomize_motor_strength:
+			min_strength, max_strength = cfg.domain_rand.motor_strength_range
+			self.motor_strengths[env_ids, :] = torch.rand(len(env_ids), dtype=torch.float, device=self.device,
+													 requires_grad=False).unsqueeze(1) * (
+												  max_strength - min_strength) + min_strength
+		if cfg.domain_rand.randomize_motor_offset:
+			min_offset, max_offset = cfg.domain_rand.motor_offset_range
+			self.motor_offsets[env_ids, :] = torch.rand(len(env_ids), self.num_dof, dtype=torch.float,
+														device=self.device, requires_grad=False) * (
+													 max_offset - min_offset) + min_offset
+		
+		if cfg.domain_rand.randomize_Kp_factor:
+			min_Kp_factor, max_Kp_factor = cfg.domain_rand.Kp_factor_range
+			self.Kp_factors[env_ids, :] = torch.rand(len(env_ids), dtype=torch.float, device=self.device,
+													 requires_grad=False).unsqueeze(1) * (
+												  max_Kp_factor - min_Kp_factor) + min_Kp_factor
+		if cfg.domain_rand.randomize_Kd_factor:
+			min_Kd_factor, max_Kd_factor = cfg.domain_rand.Kd_factor_range
+			self.Kd_factors[env_ids, :] = torch.rand(len(env_ids), dtype=torch.float, device=self.device,
+													 requires_grad=False).unsqueeze(1) * (
+												  max_Kd_factor - min_Kd_factor) + min_Kd_factor
+			
 	def _process_dof_props(self, props, env_id):
 		""" Callback allowing to store/change/randomize the DOF properties of each environment.
 			Called During environment creation.
@@ -593,6 +607,13 @@ class LeggedRobot(BaseTask):
 		#pd controller
 		actions_scaled = actions * self.cfg.control.action_scale
 		actions_scaled[:, [0, 3, 6, 9]] *= self.cfg.control.hip_scale_reduction  # scale down hip flexion range
+		
+		if self.cfg.domain_rand.randomize_lag_timesteps:
+			self.lag_buffer = self.lag_buffer[1:] + [actions_scaled.clone()]
+			self.joint_pos_target = self.lag_buffer[0] + self.default_dof_pos
+		else:
+			self.joint_pos_target = actions_scaled + self.default_dof_pos
+
 		control_type = self.cfg.control.control_type
 
 		if self.cfg.control.exp_avg_decay:
@@ -604,7 +625,7 @@ class LeggedRobot(BaseTask):
 			actions_scaled = torch.clip(actions_scaled, -0.25, 0.25)
 
 		if control_type=="P":
-			torques = self.p_gains*(actions_scaled + self.default_dof_pos - self.dof_pos) - self.d_gains*self.dof_vel
+			torques = self.p_gains*self.Kp_factors*(self.joint_pos_target - self.dof_pos + self.motor_offsets) - self.d_gains* self.Kd_factors*self.dof_vel
 		elif control_type=="V":
 			torques = self.p_gains*(actions_scaled - self.dof_vel) - self.d_gains*(self.dof_vel - self.last_dof_vel)/self.sim_params.dt
 		elif control_type=="T":
@@ -624,6 +645,7 @@ class LeggedRobot(BaseTask):
 		else:
 			raise NameError(f"Unknown controller type: {control_type}")
 
+		torques = torques * self.motor_strengths 
 		return torch.clip(torques, -self.torque_limits, self.torque_limits)
 
 	def _compute_position_commands(self,actions):
@@ -823,6 +845,8 @@ class LeggedRobot(BaseTask):
 		
 		self.base_pos = self.root_states[:self.num_envs, 0:3]
 		self.default_base_pos  = self.base_pos.clone()
+
+		self.lag_buffer = [torch.zeros_like(self.dof_pos) for i in range(self.cfg.domain_rand.lag_timesteps+1)]
 		
 		if self.cfg.terrain.measure_heights:
 			self.height_points = self._init_height_points()
@@ -852,6 +876,20 @@ class LeggedRobot(BaseTask):
 					print(f"PD gain of joint {name} were not defined, setting them to zero")
 		self.default_dof_pos = self.default_dof_pos.unsqueeze(0)
 
+
+	def _init_custom_buffers__(self):
+		self.payloads = torch.zeros(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
+		self.com_displacements = torch.zeros(self.num_envs, 3, dtype=torch.float, device=self.device,
+											 requires_grad=False)
+		self.motor_strengths = torch.ones(self.num_envs, self.num_dof, dtype=torch.float, device=self.device,
+										  requires_grad=False)
+		self.motor_offsets = torch.zeros(self.num_envs, self.num_dof, dtype=torch.float, device=self.device,
+										 requires_grad=False)
+		self.Kp_factors = torch.ones(self.num_envs, self.num_dof, dtype=torch.float, device=self.device,
+									 requires_grad=False)
+		self.Kd_factors = torch.ones(self.num_envs, self.num_dof, dtype=torch.float, device=self.device,
+									 requires_grad=False)
+		
 	def _prepare_reward_function(self):
 		""" Prepares a list of reward functions, whcih will be called to compute the total reward.
 			Looks for self._reward_<REWARD_NAME>, where <REWARD_NAME> are names of all non zero reward scales in the cfg.
@@ -979,6 +1017,8 @@ class LeggedRobot(BaseTask):
 		env_upper = gymapi.Vec3(0., 0., 0.)
 		self.actor_handles = []
 		self.envs = []
+
+		self._init_custom_buffers__()
 
 		# sphere_radius = 0.05
 		# sphere_handle = self.gym.create_sphere(self.sim, 0.3, gymapi.AssetOptions())

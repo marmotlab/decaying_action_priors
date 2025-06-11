@@ -199,5 +199,4 @@ if __name__ == '__main__':
     LOG_IMITATION_ERROR = False
     args = get_args()
     df = pd.DataFrame(index_csv) #convert to a dataframe
-    df.to_csv("testfile.csv",index=False, mode='w', header=False) #save to file
     play(args)

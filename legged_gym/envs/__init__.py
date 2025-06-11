@@ -43,11 +43,15 @@ from .a1.flat.a1_flat_config import A1FlatCfg, A1FlatCfgPPO
 from .go1.go1_config import Go1FlatCfg, Go1FlatCfgPPO
 # from .go1.go1_rough_config import Go1RoughCfg, Go1RoughCfgPPO
 from .go1.go1 import Go1
+from .go2.go2 import Go2
+from .go2.go2_config import GO2FlatCfg, GO2FlatCfgPPO
 from .yuna.yuna_config import YunaRoughCfg, YunaRoughCfgPPO
 from .yuna.yuna import Yuna
 from .mit_humanoid.mit_humanoid import Humanoid
 from .mit_humanoid.mit_humanoid_config import HumanoidCfg, HumanoidCfgPPO
 from .yuna.mixed_terrains.yuna_rough_config import YunaActualRoughCfg, YunaActualRoughCfgPPO
+from .h1.h1_config import H1RoughCfg, H1RoughCfgPPO
+from .h1.h1_env import H1Robot
 
 import os
 
@@ -60,8 +64,10 @@ task_registry.register( "a1", A1, A1RoughCfg(), A1RoughCfgPPO() )
 task_registry.register( "a1_flat", A1, A1FlatCfg(), A1FlatCfgPPO() )
 task_registry.register( "go1_flat", Go1, Go1FlatCfg(), Go1FlatCfgPPO() )
 # task_registry.register( "go1_rough", Go1, Go1RoughCfg(), Go1RoughCfgPPO() )
+task_registry.register( "go2_flat", Go2, GO2FlatCfg(), GO2FlatCfgPPO() )
 task_registry.register( "cassie", Cassie, CassieRoughCfg(), CassieRoughCfgPPO() )
 task_registry.register( "yuna", Yuna, YunaRoughCfg(), YunaRoughCfgPPO() )
 task_registry.register( "yuna_rough", Yuna, YunaActualRoughCfg(), YunaActualRoughCfgPPO() )
 task_registry.register("humanoid", Humanoid, HumanoidCfg(), HumanoidCfgPPO())
 # task_registry.register( "yuna", LeggedRobot, YunaRoughCfg(), YunaRoughCfgPPO() )
+task_registry.register( "h1", H1Robot, H1RoughCfg(), H1RoughCfgPPO())

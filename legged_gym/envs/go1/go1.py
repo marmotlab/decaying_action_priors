@@ -16,9 +16,11 @@ with open(f"legged_gym/envs/param_config.yaml", "r") as f:
 	config = yaml.load(f, Loader=yaml.FullLoader)
 	gamma_decap = config["gamma"]
 	k_decap = config["k"]
+	path_to_imitation_data = config["path_to_imitation_data"]
 
 #Read the imitation data
-df_imit = pd.read_csv('imitation_data/imitation_data_wtw.csv', parse_dates=False)
+# df_imit = pd.read_csv('imitation_data/imitation_data_wtw.csv', parse_dates=False)
+df_imit = pd.read_csv(path_to_imitation_data, parse_dates=False)
 
 class Go1(LeggedRobot):
 	def _compute_torques(self, actions):
@@ -28,7 +30,7 @@ class Go1(LeggedRobot):
 
 		index_array = self.imitation_index.detach().cpu().numpy().astype(int)
 		# Retrieve the corresponding rows from df_imit using array indexing
-		dof_imit_arr = self.df_imit.iloc[index_array,6:18].to_numpy()
+		dof_imit_arr = df_imit.iloc[index_array,6:18].to_numpy()
 		# Reshape the array to the desired shape
 		dof_imit_arr = dof_imit_arr.reshape(self.num_envs, self.num_actions)
 		# Convert the array to a PyTorch tensor
@@ -37,8 +39,8 @@ class Go1(LeggedRobot):
 		if control_type == 'decap_torque':
 
 			decap_factor = gamma_decap**(self.torque_ref_decay_factor/k_decap)
-			if decap_factor < 0.01:
-				print("DECAY has reached 0.01")
+			# if decap_factor < 0.01:
+			# 	print("DECAY has reached 0.01")
 			torques = actions_scaled + decap_factor*(self.p_gains*(dof_imit_arr - self.dof_pos)- self.d_gains*self.dof_vel)
 		
 		elif control_type=="position":
@@ -49,7 +51,16 @@ class Go1(LeggedRobot):
 		
 		elif control_type == 'decap_position':
 			torques = self.p_gains*(actions_scaled + self.default_dof_pos - self.dof_pos) - self.d_gains*self.dof_vel + gamma_decap**(self.torque_ref_decay_factor/k_decap)*(self.p_gains*(dof_imit_arr - self.dof_pos)- self.d_gains*self.dof_vel)
+			# torques = (self.p_gains*(dof_imit_arr - self.dof_pos)- self.d_gains*self.dof_vel)
 		
+		elif control_type == 'velocity':
+			torques = self.p_gains*(actions_scaled - self.dof_vel) - self.d_gains*(self.dof_vel - self.last_dof_vel)/self.sim_params.dt
+
+		elif control_type == 'decap_velocity':
+			decap_factor = gamma_decap**(self.torque_ref_decay_factor/k_decap)
+
+			torques = self.p_gains*(actions_scaled - self.dof_vel) - self.d_gains*(self.dof_vel - self.last_dof_vel)/self.sim_params.dt + decap_factor*(self.p_gains*(dof_imit_arr - self.dof_pos)- self.d_gains*self.dof_vel)
+
 		else:
 			raise ValueError(f"Unknown control type: {control_type}")
 		return torch.clip(torques, -self.torque_limits, self.torque_limits)

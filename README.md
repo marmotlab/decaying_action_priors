@@ -48,13 +48,14 @@ python legged_gym/scripts/play.py --task=go1_flat --load_run=decap_0.75x
 The parameters for DecAP can be changed inside 'legged_gym/envs/param_config.yaml':
    - `control_type` dictates whether the policy would be trained using torques, position or DecAP. By default it is set to `decap_torques` which trains torques using DecAP. For inference of the trained policy (playing the policy) change this to `torques`
    - `gamma` and `k` for DecAP (refer the paper) can also be varied here
+   - Change the `path_to_imitation_data` according to the robot (all the files are commented out, so you can choose the one you want to use)
 
 To train the policies run the following command inside decaying_action_priors folder:
 
 ```
 python legged_gym/scripts/train.py --task={task_name}
 ```
-   - Tasks available with DecAP for now are `go1_flat`, `cassie` and `yuna`
+   - Tasks available with DecAP for now are `go1_flat`, `cassie`, `yuna` and `h1`
 
 Imitation Rewards used (inside corresponding {robot}_config files):
 - Joint Angles
@@ -76,7 +77,8 @@ The imitation rewards are defined in the respective robot files in the envs fold
 
 ## Upcoming developments:
 - [x] Move DecAP params to yaml
-- [ ] Go2 support
+- [x] Go2 support
+- [x] H1 Humanoid support
 - [ ] Sim-to-Sim Mujoco support
 - [ ] Code for hardware deployment
 ## Credit

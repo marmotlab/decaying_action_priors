@@ -6,8 +6,12 @@
 # NOTE: for inference of the policy use non-decap control types as they will initially run imitation commands along with the trained policy
 
 control_type: "decap_torque" 
+# control_type: "decap_position"
+# control_type: "position"
 # control_type: "torque"
+# control_type: "decap_velocity"
 action_scale: 8.0 # 8.0 for torque, 0.25 for position (quadruped), 0.5 for hexapod
+# action_scale: 0.25
 num_envs: 4096
 control_decimation: 4
 
@@ -15,6 +19,7 @@ control_decimation: 4
 gamma: 0.99
 k: 100
 
-
-
-
+# path_to_imitation_data: "imitation_data/imitation_data_wtw.csv"
+# path_to_imitation_data: "imitation_data/imitation_cassie.csv"
+path_to_imitation_data: "imitation_data/imitation_data_yuna_torques.csv"
+# path_to_imitation_data: "imitation_data/imitation_h1_walking.csv"

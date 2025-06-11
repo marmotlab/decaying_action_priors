@@ -46,8 +46,9 @@ with open(f"legged_gym/envs/param_config.yaml", "r") as f:
 	config = yaml.load(f, Loader=yaml.FullLoader)
 	gamma_decap = config["gamma"]
 	k_decap = config["k"]
+	path_to_imitation_data = config["path_to_imitation_data"]
 
-df_imit = pd.read_csv('imitation_data/imitation_cassie.csv', parse_dates=False)
+df_imit = pd.read_csv(path_to_imitation_data, parse_dates=False)
 
 class Cassie(LeggedRobot):
 	def _compute_torques(self, actions):
@@ -57,7 +58,7 @@ class Cassie(LeggedRobot):
 
 		index_array = self.imitation_index.detach().cpu().numpy().astype(int)
 		# Retrieve the corresponding rows from df_imit using array indexing
-		dof_imit_arr = self.df_imit.iloc[index_array,0:12].to_numpy()
+		dof_imit_arr = df_imit.iloc[index_array,0:12].to_numpy()
 		# Reshape the array to the desired shape
 		dof_imit_arr = dof_imit_arr.reshape(self.num_envs, self.num_actions)
 		# Convert the array to a PyTorch tensor
