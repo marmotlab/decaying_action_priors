@@ -3,6 +3,8 @@ Torque-Based Legged Locomotion Policies </h1>
 
 <div align="center">
 
+International Conference on Intelligent Robots and Systems (IROS) 2024
+
 [[Video]](https://www.youtube.com/watch?v=O1lcry7sHNQ)
 [[Paper]](https://arxiv.org/abs/2310.05714)
 
@@ -17,7 +19,6 @@ Torque-Based Legged Locomotion Policies </h1>
 <!-- **Affiliation**: MARMoT Lab, NUS  
 **Contact**: shivamsood2000@gmail.com -->
 
----
 
 ## Training in Simulation
 
