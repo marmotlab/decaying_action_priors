@@ -39,12 +39,22 @@ import torch
 # from torch.tensor import Tensor
 from typing import Tuple, Dict
 
+import yaml
+
 from legged_gym.envs import LeggedRobot
 from legged_gym import LEGGED_GYM_ROOT_DIR
 from .mixed_terrains.anymal_c_rough_config import AnymalCRoughCfg
 import pandas as pd
+import yaml
 
-df_imit = pd.read_csv('imitation_data/imitation_data_wtw.csv', parse_dates=False)
+with open(f"legged_gym/envs/param_config.yaml", "r") as f:
+	config = yaml.load(f, Loader=yaml.FullLoader)
+	gamma_decap = config["gamma"]
+	k_decap = config["k"]
+	path_to_imitation_data = config["path_to_imitation_data"]
+
+#Read the imitation data
+df_imit = pd.read_csv(path_to_imitation_data, parse_dates=False)
 
 class Anymal(LeggedRobot):
     cfg : AnymalCRoughCfg

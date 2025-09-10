@@ -39,25 +39,6 @@ import numpy as np
 import torch
 import pandas as pd
 
-# index_csv = [['base1','shoulder1', 'elbow1', 'base2', 'shoulder2', 'elbow2', 'base3', 'shoulder3', 'elbow3', 'base4', 'shoulder4', 'elbow4'
-#              , 'base5', 'shoulder5', 'elbow5', 'base6', 'shoulder6', 'elbow6']]
-index_csv = [['dof_target','dof_pos']]
-
-rest_position_gym = np.array([0, 0, 0,
-                     0, 0, 0,
-                     0, 0, 0,
-                     0, 0, 0,
-                     0, 0, 0,
-                     0, 0, 0])
-
-a1_rest_torques = np.array([ 0.8347,  0.2094,  3.8837, -0.1135, -0.8283,  4.6491, -0.2000, -0.5681,
-         4.2520, -0.6055,  0.1871,  3.5612])
-
-df_imit = pd.read_csv('imitation_data/imitation_data_yuna_torques.csv', parse_dates=False)
-# df_imit = pd.read_csv('imitation_data/imitation_data_wtw.csv', parse_dates=False)
-# df_imit = pd.read_csv('imitation_data/imitation_cassie.csv', parse_dates=False)
-
-
 def play(args):
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
     # override some parameters for testing
@@ -135,68 +116,9 @@ def play(args):
             camera_position += camera_vel * env.dt
             env.set_camera(camera_position, camera_position + camera_direction)
 
-        if LOG_IMITATION_ERROR:
-            #print the average error between imitation angles and actual angles
-            dof_pos = env.dof_pos[robot_index, :].detach().cpu().numpy()
-            dof_pos_imit = df_imit.iloc[i, :18].values
-            error = np.square(np.abs(dof_pos - dof_pos_imit))
-            error_array.append(error)
-
-            #print the average error between imitation velocities and actual velocities
-            # base_lin_vel = env.base_lin_vel[robot_index, :].detach().cpu().numpy()
-            # base_lin_vel_imit = df_imit.iloc[i, 18:21].values
-            # error_v = np.square(np.abs(base_lin_vel - base_lin_vel_imit))
-            # error_v_array.append(error_v)
-
-            # #print the average error between imitation angular velocities and actual angular velocities
-            # base_ang_vel = env.base_ang_vel[robot_index, :].detach().cpu().numpy()
-            # base_ang_vel_imit = df_imit.iloc[i, 20:21].values
-            # error_w = np.square(np.abs(base_ang_vel - base_ang_vel_imit))
-            # arror_w_array.append(error_w)
-            
-            if i == 1000:
-                error_avg = np.sqrt(np.mean(error_array))
-                print("Average error between imitation angles and actual angles", error_avg)
-
-                # error_v_avg = np.sqrt(np.mean(error_v_array))
-                # print("Average error between imitation velocities and actual velocities", error_v_avg)
-
-                # error_w_avg = np.sqrt(np.mean(arror_w_array))
-                # print("Average error between imitation angular velocities and actual angular velocities", error_w_avg)
-        # if i < stop_state_log:
-        #     logger.log_states(
-        #         {
-        #             'dof_pos_target': np.clip(actions[robot_index, joint_index].item() * env.cfg.control.action_scale, -100,100),
-        #             'dof_pos': env.dof_pos[robot_index, joint_index].item(),
-        #             'dof_vel': env.dof_vel[robot_index, joint_index].item(),
-        #             'dof_torque': env.torques[robot_index, joint_index].item(),
-        #             'command_x': env.commands[robot_index, 0].item(),
-        #             'command_y': env.commands[robot_index, 1].item(),
-        #             'command_yaw': env.commands[robot_index, 2].item(),
-        #             'base_vel_x': env.base_lin_vel[robot_index, 0].item(),
-        #             'base_vel_y': env.base_lin_vel[robot_index, 1].item(),
-        #             'base_vel_z': env.base_lin_vel[robot_index, 2].item(),
-        #             'base_vel_yaw': env.base_ang_vel[robot_index, 2].item(),
-        #             'contact_forces_z': env.contact_forces[robot_index, env.feet_indices, 2].cpu().numpy()
-        #         }
-        #     )
-        # elif i==stop_state_log:
-        #     logger.plot_states()
-        # if  0 < i < stop_rew_log:
-        #     if infos["episode"]:
-        #         num_episodes = torch.sum(env.reset_buf).item()
-        #         if num_episodes>0:
-        #             logger.log_rewards(infos["episode"], num_episodes)
-        # elif i==stop_rew_log:
-        #     logger.print_rewards()
-
-
-
 if __name__ == '__main__':
     EXPORT_POLICY = True
     RECORD_FRAMES = False
     MOVE_CAMERA = False
-    LOG_IMITATION_ERROR = False
     args = get_args()
-    df = pd.DataFrame(index_csv) #convert to a dataframe
     play(args)

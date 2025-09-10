@@ -19,7 +19,7 @@ control_decimation: 4
 gamma: 0.99
 k: 100
 
-# path_to_imitation_data: "imitation_data/imitation_data_wtw.csv"
+path_to_imitation_data: "imitation_data/imitation_data_go1_and_go2.csv"
 # path_to_imitation_data: "imitation_data/imitation_cassie.csv"
-path_to_imitation_data: "imitation_data/imitation_data_yuna_torques.csv"
+# path_to_imitation_data: "imitation_data/imitation_data_yuna_torques.csv"
 # path_to_imitation_data: "imitation_data/imitation_h1_walking.csv"

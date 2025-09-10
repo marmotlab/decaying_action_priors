@@ -133,7 +133,7 @@ class GO2FlatCfg( LeggedRobotCfg ):
 		push_robots = True
 		push_interval_s = 5
 		max_push_vel_xy = 1.2
-		randomize_lag_timesteps = True
+		randomize_lag_timesteps = False
 		lag_timesteps = 6
 		randomize_motor_offset = True
 		motor_offset_range = [-0.03, 0.03]

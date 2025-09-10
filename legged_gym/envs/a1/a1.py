@@ -39,7 +39,13 @@ import torch
 from typing import Tuple, Dict
 from legged_gym.envs import LeggedRobot
 import pandas as pd
-df_imit = pd.read_csv('imitation_data/imitation_data_wtw.csv', parse_dates=False)
+import yaml
+
+with open(f"legged_gym/envs/param_config.yaml", "r") as f:
+	config = yaml.load(f, Loader=yaml.FullLoader)
+	gamma_decap = config["gamma"]
+	k_decap = config["k"]
+	path_to_imitation_data = config["path_to_imitation_data"]
 
 class A1(LeggedRobot):
     def _reward_imitation_angles(self):

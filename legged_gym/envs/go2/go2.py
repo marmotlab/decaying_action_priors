@@ -16,9 +16,10 @@ with open(f"legged_gym/envs/param_config.yaml", "r") as f:
 	config = yaml.load(f, Loader=yaml.FullLoader)
 	gamma_decap = config["gamma"]
 	k_decap = config["k"]
+	path_to_imitation_data = config["path_to_imitation_data"]
 
 #Read the imitation data
-df_imit = pd.read_csv('imitation_data/imitation_data_go2.csv', parse_dates=False)
+df_imit = pd.read_csv(path_to_imitation_data, parse_dates=False)
 
 class Go2(LeggedRobot):
 	def _compute_torques(self, actions):

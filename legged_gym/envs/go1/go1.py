@@ -19,7 +19,6 @@ with open(f"legged_gym/envs/param_config.yaml", "r") as f:
 	path_to_imitation_data = config["path_to_imitation_data"]
 
 #Read the imitation data
-# df_imit = pd.read_csv('imitation_data/imitation_data_wtw.csv', parse_dates=False)
 df_imit = pd.read_csv(path_to_imitation_data, parse_dates=False)
 
 class Go1(LeggedRobot):
