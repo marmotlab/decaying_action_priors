@@ -148,6 +148,7 @@ class LeggedRobot(BaseTask):
 		"""
 		self.gym.refresh_actor_root_state_tensor(self.sim)
 		self.gym.refresh_net_contact_force_tensor(self.sim)
+		self.gym.refresh_rigid_body_state_tensor(self.sim)
 
 		self.episode_length_buf += 1
 		self.common_step_counter += 1
@@ -1111,7 +1112,7 @@ class LeggedRobot(BaseTask):
 		if not self.terrain.cfg.measure_heights:
 			return
 		self.gym.clear_lines(self.viewer)
-		self.gym.refresh_rigid_body_state_tensor(self.sim)
+		# self.gym.refresh_rigid_body_state_tensor(self.sim)
 		sphere_geom = gymutil.WireframeSphereGeometry(0.02, 4, 4, None, color=(1, 1, 0))
 		for i in range(self.num_envs):
 			base_pos = (self.root_states[i, :3]).cpu().numpy()
